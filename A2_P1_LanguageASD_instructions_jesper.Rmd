@@ -1,6 +1,6 @@
 ---
 title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development"
-author: "Jesper Fischer."
+author: "Jesper Fischer.."
 date: "[DATE]"
 output: html_document
 ---
