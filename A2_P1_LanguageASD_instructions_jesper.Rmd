@@ -75,7 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-
+pacman::p_load(tidyverse, lmerTest, lme4)
 ```
 
 ### Define your working directory and load the data
@@ -88,7 +88,7 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
-
+read_csv("df.csv")
 ```
 
 ### Characterize the participants (Exercise 1)
