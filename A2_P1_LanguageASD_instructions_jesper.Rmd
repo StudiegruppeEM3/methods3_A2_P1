@@ -88,7 +88,7 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
-read_csv("df.csv")
+df = read.csv("data_cleaned_draft.csv")
 ```
 
 ### Characterize the participants (Exercise 1)
@@ -96,16 +96,53 @@ read_csv("df.csv")
 Identify relevant variables: participants demographic characteristics, diagnosis, ADOS, Verbal IQ, Non Verbal IQ, Socialization, Visit, Number of words used, Number of unique words used, mean length of utterance in both child and parents.
 
 Make sure the variables are in the right format.
+```{r}
+df$Diagnosis = ifelse(df$Diagnosis == "A", "ASD", "TD")
+```
 
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
+#Firstly subject 66 is totally irrelavant 1 visist and does not even have they IQ scores or MLU therefore we exclude him.
+df = df %>% filter(df$SUBJ != 66)
+
+
+df %>%
+  group_by(SUBJ, Diagnosis) %>%
+  summarize(MAX_VISIT = max(VISIT)) %>%
+  filter(MAX_VISIT < 6)
+df %>% group_by(Diagnosis) %>% summarize(n = n())
 
 ```
 
-The sample included mostly young (<20) white males ...
 
-[REPORT THE RESULTS]
+```{r descriptive stats, include = FALSE}
+#how many in each group?
+df %>% group_by(Diagnosis) %>% summarize(n = n())
+#what is their age in the different groups?
+#plot
+ggplot(df, aes(x = Diagnosis, y = Age))+geom_boxplot()
+#numbers
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(Age, na.rm = T), sd = sd(Age, na.rm = T))
+#how many in each group from the different Ethnicity
+df %>% group_by(Ethnicity, Diagnosis) %>% summarize(n = n())
+#how many males and females in each group
+df %>% group_by(Gender, Diagnosis) %>% summarize(n = n()/6)
+#how about ADOS scores at visit1?
+#plot
+ggplot(df, aes(x = Diagnosis, y = ADOS1))+geom_boxplot()
+#numbers
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(ADOS1), sd = sd(ADOS1))
+#verbalIQ in the first visit
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(verbalIQ, na.rm = T), sd = sd(verbalIQ, na.rm = T))
+#nonverbalIQ in first visit
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(nonVerbalIQ, na.rm = T), sd = sd(nonVerbalIQ, na.rm = T))
+#socialization in first visit
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(Socialization1, na.rm = T), sd = sd(Socialization1, na.rm = T))
+
+```
+
+The sample included 33 (27 male and 6 female)Traditional children (TD) with a mean age of 43±9 months (mean±sd) and 29 (25 male and 4 female) children suffering from Autistic syndrome Disorder (ASD) with a mean age of 30.6±7.23 months. Both TD and children with ASD where mostly white. The TD scored a mean of 0.95±1.8 on the Autism Diagnostic Observation Schedul (ADOS) while the children with ASD scored a mean of 14.11±4.2. A verbal and non-verbal IQ test from the first visits showed that the TD had a verbal IQ of 20.14±5.1 and a non-verbal IQ of 25.92±3.39 while the children with ASD had a verbal IQ of 17.58±7.4 and a non-verbal IQ of 26.89±5.6. Finally socialization scores from the first visist showed that TD had a socialization score of 100.51±6.75 while the children with ASD had a socialization score of 77.20±9.63.
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
 
