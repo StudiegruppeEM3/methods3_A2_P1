@@ -102,60 +102,138 @@ df$Diagnosis = ifelse(df$Diagnosis == "A", "ASD", "TD")
 we might want to exclude participant 66 because of missing data and only completed visit 1.
 ```{r}
 #Subject 66 is totally irrelavant 1 visist and does not even have they IQ scores or MLU therefore we exclude him.
-
 df = df %>% filter(df$SUBJ != 66)
 
+#creating a new dataset with only the data from the first visit
+df_v1 <- filter(df, VISIT == 1)
+# selecting the relevant columns in this new dataframe
+df_v1 <- select(df_v1, SUBJ, VISIT, CHI_MLU, MOT_MLU, types_CHI, types_MOT, tokens_CHI, tokens_MOT)
+#renaming columns to indicate it is only for visit 1
+df_v1 = df_v1 %>% 
+  rename("CHI_MLU1" = "CHI_MLU")%>% 
+  rename("MOT_MLU1" = "MOT_MLU")%>% 
+  rename("types_CHI1" = "types_CHI")%>% 
+  rename("types_MOT1" = "types_MOT")%>% 
+  rename("tokens_CHI1" = "tokens_CHI")%>% 
+  rename("tokens_MOT1" = "tokens_MOT") 
+#adding these columns to the big dataset
+df <- merge(df, df_v1, by="SUBJ")
+
+
+
+
+
 ```
-
-
 
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
-df$SUBJ = as.integer(df$SUBJ)
+#how many participants are there in each diagnosis
+TD_df <- filter(df, Diagnosis=="TD")
+ASD_df <- filter(df, Diagnosis=="ASD")
+#how many children in total
+length(unique(df$SUBJ))
+#how many TDs 
+length(unique(TD_df$SUBJ))
 
-df %>%
-  group_by(SUBJ, Diagnosis) %>%
-  summarize(n = n()) %>%
-  filter(n < 6)
+#gender of TD
+genderf = TD_df %>% filter(TD_df$Gender != "M")
+length(unique(genderf$SUBJ))
 
-df$SUBJ = as.factor(df$SUBJ)
+genderm = TD_df %>% filter(TD_df$Gender == "M")
+length(unique(genderm$SUBJ))
+#Gender of ASD
+genderaf = ASD_df %>% filter(ASD_df$Gender != "M")
+length(unique(genderaf$SUBJ))
 
-df %>% group_by(Diagnosis) %>% summarize(n = n())
+genderam = ASD_df %>% filter(ASD_df$Gender == "M")
+length(unique(genderam$SUBJ))
 
-ASD = ((176-14)/6)+4
-TD = ((195-9)/6)+3
 
 ```
 
 
 ```{r descriptive stats, include = FALSE}
-#how many in each group?
-df %>% group_by(Diagnosis) %>% summarize(n = n())
 #what is their age in the different groups?
 #plot
 ggplot(df, aes(x = Diagnosis, y = Age))+geom_boxplot()
 #numbers
-df %>% group_by(Diagnosis) %>% summarize(mean = mean(Age, na.rm = T), sd = sd(Age, na.rm = T))
+age = df %>% group_by(Diagnosis) %>% summarize(mean = mean(Age, na.rm = T), sd = sd(Age, na.rm = T))
+
+#T-test on age.
+t.test(ASD_df$Age, TD_df$Age)
+
 #how many in each group from the different Ethnicity
 df %>% group_by(Ethnicity, Diagnosis) %>% summarize(n = n())
-#how many males and females in each group
-df %>% group_by(Gender, Diagnosis) %>% summarize(n = n()/6)
+
 #how about ADOS scores at visit1?
 #plot
 ggplot(df, aes(x = Diagnosis, y = ADOS1))+geom_boxplot()
 #numbers
 df %>% group_by(Diagnosis) %>% summarize(mean = mean(ADOS1), sd = sd(ADOS1))
+#t-test on ADOS scores.
+t.test(ASD_df$ADOS1, TD_df$ADOS1)
+
 #verbalIQ in the first visit
 df %>% group_by(Diagnosis) %>% summarize(mean = mean(verbalIQ, na.rm = T), sd = sd(verbalIQ, na.rm = T))
+#t-test for verbalIQ
+t.test(ASD_df$verbalIQ, TD_df$verbalIQ)
+
 #nonverbalIQ in first visit
 df %>% group_by(Diagnosis) %>% summarize(mean = mean(nonVerbalIQ, na.rm = T), sd = sd(nonVerbalIQ, na.rm = T))
+#t-test for non-verbal IQ
+t.test(ASD_df$nonVerbalIQ, TD_df$nonVerbalIQ)
+
+
 #socialization in first visit
 df %>% group_by(Diagnosis) %>% summarize(mean = mean(Socialization1, na.rm = T), sd = sd(Socialization1, na.rm = T))
-
+#t-test for socialization 
+t.test(ASD_df$Socialization1, TD_df$Socialization1)
 ```
 
-The sample included 34 (excluding participant 66 because of missing data and only completing visit1) (27 male and 6 female) typical developing (TD) children with a mean age of 43±9 months (mean±sd) and 29 (25 male and 4 female) children suffering from Autistic syndrome Disorder (ASD) with a mean age of 30.6±7.23 months. Both TD and children with ASD where mostly white. The TD scored a mean of 0.95±1.8 on the Autism Diagnostic Observation Schedul (ADOS) while the children with ASD scored a mean of 14.11±4.2. A verbal and non-verbal IQ test from the first visits showed that the TD had a verbal IQ of 20.14±5.1 and a non-verbal IQ of 25.92±3.39 while the children with ASD had a verbal IQ of 17.58±7.4 and a non-verbal IQ of 26.89±5.6. Finally socialization scores from the first visist showed that TD had a socialization score of 100.51±6.75 while the children with ASD had a socialization score of 77.20±9.63.
+
+```{r descriptive stats, include = FALSE}
+
+
+#number of words used, Number of unique words used, mean length of utterance in both child and parents.
+#mean lnegth of utterance, child.
+
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(CHI_MLU1,na.rm = T), sd = sd(CHI_MLU1,na.rm = T))
+#t-test on mean length of utterance at visit 1
+t.test(ASD_df$CHI_MLU1, TD_df$CHI_MLU1)
+
+#mean num of utterance, child
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(types_CHI1,na.rm = T), sd = sd(types_CHI1,na.rm = T))
+#t-test for num of utterances.
+t.test(ASD_df$types_CHI1, TD_df$types_CHI1)
+
+#number of tokens?? child 
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(tokens_CHI1,na.rm = T), sd = sd(tokens_CHI1,na.rm = T))
+#t-test for tokens
+t.test(ASD_df$tokens_CHI1, TD_df$tokens_CHI1)
+
+#mean lnegth of utterance, mother
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(MOT_MLU1,na.rm = T), sd = sd(MOT_MLU1,na.rm = T))
+#t-test for utterances for the mother.
+t.test(ASD_df$MOT_MLU1, TD_df$MOT_MLU1)
+
+
+#mean num of types mother
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(types_MOT1,na.rm = T), sd = sd(types_MOT1,na.rm = T))
+#t-test for number of types 
+t.test(ASD_df$types_MOT1, TD_df$types_MOT1)
+
+#number of tokens?? mother
+df %>% group_by(Diagnosis) %>% summarize(mean = mean(tokens_MOT1,na.rm = T), sd = sd(tokens_MOT1,na.rm = T))
+
+#number of tokens t-test
+t.test(ASD_df$tokens_MOT1, TD_df$tokens_MOT1)
+```
+
+The sample included 35 (excluding participant 66 because of missing data and only completing visit1) (28 male and 6 female) typical developing (TD) children with a mean age of 43±9 months (mean±sd) and 31 (26 male and 5 female) children suffering from Autistic syndrome Disorder (ASD) with a mean age of 30.6±7.23 months, a t-test showed that the two groups where not matched in age ()
+
+
+Both TD and children with ASD where mostly white. The TD scored a mean of 0.95±1.8 on the Autism Diagnostic Observation Schedul (ADOS) while the children with ASD scored a mean of 14.11±4.2. A verbal and non-verbal IQ test from the first visits showed that the TD had a verbal IQ of 20.14±5.1 and a non-verbal IQ of 25.92±3.39 while the children with ASD had a verbal IQ of 17.58±7.4 and a non-verbal IQ of 26.89±5.6. Finally socialization scores from the first visist showed that TD had a socialization score of 100.51±6.75 while the children with ASD had a socialization score of 77.20±9.63.
 
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
