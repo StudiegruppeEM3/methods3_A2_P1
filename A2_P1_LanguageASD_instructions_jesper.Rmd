@@ -75,7 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-pacman::p_load(tidyverse, lmerTest, lme4)
+pacman::p_load(tidyverse, lmerTest, lme4, MuMIn)
 ```
 
 ### Define your working directory and load the data
@@ -99,19 +99,32 @@ Make sure the variables are in the right format.
 ```{r}
 df$Diagnosis = ifelse(df$Diagnosis == "A", "ASD", "TD")
 ```
+we might want to exclude participant 66 because of missing data and only completed visit 1.
+```{r}
+#Subject 66 is totally irrelavant 1 visist and does not even have they IQ scores or MLU therefore we exclude him.
+
+df = df %>% filter(df$SUBJ != 66)
+
+```
+
+
 
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
-#Firstly subject 66 is totally irrelavant 1 visist and does not even have they IQ scores or MLU therefore we exclude him.
-df = df %>% filter(df$SUBJ != 66)
-
+df$SUBJ = as.integer(df$SUBJ)
 
 df %>%
   group_by(SUBJ, Diagnosis) %>%
-  summarize(MAX_VISIT = max(VISIT)) %>%
-  filter(MAX_VISIT < 6)
+  summarize(n = n()) %>%
+  filter(n < 6)
+
+df$SUBJ = as.factor(df$SUBJ)
+
 df %>% group_by(Diagnosis) %>% summarize(n = n())
+
+ASD = ((176-14)/6)+4
+TD = ((195-9)/6)+3
 
 ```
 
@@ -142,9 +155,12 @@ df %>% group_by(Diagnosis) %>% summarize(mean = mean(Socialization1, na.rm = T),
 
 ```
 
-The sample included 33 (27 male and 6 female)Traditional children (TD) with a mean age of 43±9 months (mean±sd) and 29 (25 male and 4 female) children suffering from Autistic syndrome Disorder (ASD) with a mean age of 30.6±7.23 months. Both TD and children with ASD where mostly white. The TD scored a mean of 0.95±1.8 on the Autism Diagnostic Observation Schedul (ADOS) while the children with ASD scored a mean of 14.11±4.2. A verbal and non-verbal IQ test from the first visits showed that the TD had a verbal IQ of 20.14±5.1 and a non-verbal IQ of 25.92±3.39 while the children with ASD had a verbal IQ of 17.58±7.4 and a non-verbal IQ of 26.89±5.6. Finally socialization scores from the first visist showed that TD had a socialization score of 100.51±6.75 while the children with ASD had a socialization score of 77.20±9.63.
+The sample included 34 (excluding participant 66 because of missing data and only completing visit1) (27 male and 6 female) typical developing (TD) children with a mean age of 43±9 months (mean±sd) and 29 (25 male and 4 female) children suffering from Autistic syndrome Disorder (ASD) with a mean age of 30.6±7.23 months. Both TD and children with ASD where mostly white. The TD scored a mean of 0.95±1.8 on the Autism Diagnostic Observation Schedul (ADOS) while the children with ASD scored a mean of 14.11±4.2. A verbal and non-verbal IQ test from the first visits showed that the TD had a verbal IQ of 20.14±5.1 and a non-verbal IQ of 25.92±3.39 while the children with ASD had a verbal IQ of 17.58±7.4 and a non-verbal IQ of 26.89±5.6. Finally socialization scores from the first visist showed that TD had a socialization score of 100.51±6.75 while the children with ASD had a socialization score of 77.20±9.63.
+
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
+
+
 
 ### Hypothesis: The child's MLU changes: i) over time, ii) according to diagnosis
 
@@ -152,23 +168,122 @@ Let's start with a simple mixed effects linear model
 
 Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as fixed factors?
+
+Diagnosis for testing wether it effects children MLU changes. And visit to see if their MLU changes over time.
+
 - Which variable(s) should be included as random factors?
 
+with this little data including random slopes might make the model fail to converge so its probably only random intercept we can include which should be subject.
+
+plotting data
 ```{r ex2, include = FALSE}
+df$Diagnosis = as.factor(df$Diagnosis)
+df$VISIT = as.factor(df$VISIT)
+
+
+ggplot(df, aes(y = CHI_MLU, x = VISIT, col = Diagnosis)) + geom_boxplot()
+```
+
+making the model 
+```{r}
+
+m1 = lmer(CHI_MLU ~ VISIT * Diagnosis + (1|SUBJ), df)
+summary(m1)
+```
+How would you evaluate whether the model is a good model?
+
+
+first we should check the assumption of the model, if they are not met our model is pointless.
+
+```{r}
+plot(fitted(m1),residuals(m1))^2
 
 ```
 
-How would you evaluate whether the model is a good model?
+No patten is to be observed therefore linearity assumption is met.
+The assumption of Homoskedasticity can also be checked from the plot, it seems like their might be a bit of heteroskedasticity, but not to badly.
+
+The output of the model shows the correlation between the two predictors which comes out to be 0.369, which is a small to medium correlation, no reason for concern.
+
+
+normality of residuals.
+```{r}
+hist(residuals(m1))
+qqnorm(residuals(m1))
+```
+the histogram and the qq-plot looks normal, which means the nomality of residuals is met.
+
+
+Check for outliers.
+```{r}
+
+```
+
 
 ```{r ex2 evaluate, include = FALSE}
 
+
+
+
 ```
+the fixed effects seem to explain 30% of the variance which isnt to great.
 
 Not too good, right? Let's check whether a growth curve model is better.
 Remember: a growth curve model assesses whether changes in time can be described by linear, or quadratic, or cubic (or... etc.) components.
 First build the different models, then compare them to see which one is better.
 
 ```{r ex2 growth curve, include = FALSE}
+df$VISIT = as.numeric(df$VISIT)
+
+m1 = lmer(CHI_MLU ~ Diagnosis + VISIT + (1|SUBJ), df)
+summary(m1)
+m2 = lmer(CHI_MLU ~ Diagnosis + poly(VISIT,2) + (1|SUBJ), df)
+summary(m2)
+m3 = lmer(CHI_MLU ~ Diagnosis + poly(VISIT,3) + (1|SUBJ), df)
+summary(m3)
+m4 = lmer(CHI_MLU ~ Diagnosis + poly(VISIT,4) + (1|SUBJ), df)
+summary(m4)
+
+r.squaredGLMM(mm1)
+r.squaredLR(mm2)
+r.squaredGLMM(m3)
+r.squaredGLMM(m4)
+
+?r.squaredLR()
+?r.squaredGLMM
+
+mm1 = lmer(CHI_MLU ~ Diagnosis * poly(VISIT,5) + (VISIT|SUBJ), df1)
+mm2 = lmer(CHI_MLU ~ Diagnosis + VISIT + (1|SUBJ), df1)
+
+summary(mm1)
+summary(mm2)
+
+mm3 = lmer(CHI_MLU ~ Diagnosis + poly(VISIT,2) + (1|SUBJ), df)
+summary(mm3)
+
+mm2 = lmer(CHI_MLU ~ Diagnosis *VISIT^2 + (1|SUBJ), df)
+
+r.squaredGLMM(mm1)
+r.squaredGLMM(mm2)
+
+ggplot(df1, aes(VISIT, CHI_MLU, colour = Diagnosis))+ geom_point()+ geom_jitter()+geom_smooth(method = "lm", formula = y ~ x+poly(x,5), size =1)
+
+
+ggplot(df1, aes(VISIT, CHI_MLU, colour = Diagnosis))+ geom_point()+ geom_jitter()+geom_smooth(method = "lm", formula = y ~ x+I(x^2), size =1)
+
+
+```
+
+```{r}
+plot(fitted(m1))
+plot(fitted(m2))
+
+plot(predict(m1),df$CHI_MLU)
+
+ggplot(df1, aes(x = (fitted(m1)), y = CHI_MLU))+ geom_point()
+
+length(fitted(m1))
+
 
 ```
 
