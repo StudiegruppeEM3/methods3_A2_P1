@@ -95,15 +95,15 @@ test$ADOS1 = test$Ados1
 test = test %>% drop_na(CHI_MLU)
 
 
-#- calculating performance of the model on the test data
-
-rmse2 = RMSE(fitted(m1), test$CHI_MLU)
 
 #- test the performance of the models on the test data (Tips: google the functions "predict()")
 
-test$predicted_MLU = predict(m1, test, allow.new.levels = TRUE)
+rmse2 = RMSE(predict(m1,test,allow.new.levels = TRUE), test$CHI_MLU)
 
 # a plot showing the observed data compared to the predicted data for the test data
+
+test$predicted_MLU = predict(m1, test, allow.new.levels = TRUE)
+
 ggplot(test, aes(test$predicted_MLU, test$CHI_MLU))+ geom_point()+geom_abline(intercept = 0, slope = 1)+labs(x = "predicted", y = "actual")
 
 #- optional: predictions are never certain, can you identify the uncertainty of the predictions? (e.g. google predictinterval())
@@ -114,7 +114,7 @@ op$actual = test$CHI_MLU
 
 ```
 
-The root mean square of the model on the training data is 0.4. Since the childrens lengths of utterance are generally quite small, this is rmse does not indicate great perfomance of the model on the training data. However it is even higher for the test data (1.1). 
+The root mean square of the model on the training data is 0.4. Since the childrens lengths of utterance are generally quite small, this is rmse does not indicate great perfomance of the model on the training data. However it is even higher for the test data (0.65). 
 
 This makes sense, since the model has been built on the training data it more closely follows this data. 
 
